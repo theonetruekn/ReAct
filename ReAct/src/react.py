@@ -3,41 +3,45 @@ import re
 
 from src.utils import query_completions
 
-SYSPROMPT = """
-You will be given `question` and you will respond with `answer`.
-
-To do this, you will interleave Thought, Action, and Observation steps.
-
-Thought can reason about the current situation, and Action can be the following types:
-
-(1) CodeSearch[search_query], which 
-        searches the codebase for classes or functions specified in 'search_query'. This includes all methods.
-        Example use: CodeSearch[my_func(param1, param2)] or CodeSearch[SomeClass(param1, param2)].
-        
-(2) Finish[answer], which returns the final `answer` and finishes the task. After calling this tool, you can stop generating.
-
----
-
-Follow the following format:
-
-Thought 1: Reasoning which action to take to solve the task.
-Action 1: always either CodeSearch[search_query] or, when done, Finish[answer]. Nothing else.
-Observation 1: result of Action 1
-Thought 2: next steps to take based on the previous Observation
-...
-
-until Action is of type Finish.
-
----
-
-Question:
-"""
-
 class ReAct:
 
     def __init__(self, model, tools) -> None:
         self.model = model
         self.tools = tools
+        self.sysprompt = self._build_sysprompt(tools)
+
+    def _build_sysprompt(self, tools: dict) -> str:
+        skeleton = (
+            "You will be given `question` and you will respond with `answer`.\n\n"
+            "To do this, you will interleave Thought, Action, and Observation steps.\n\n"
+            "Thought can reason about the current situation, and Action can be the following types:\n"
+        )
+
+        for i, (action_name, action_value) in enumerate(tools.items(), start=1):
+            skeleton += f"({i}) {action_value.short_desc}, which {action_value.desc}. Example use: {action_value.example}\n"
+
+        skeleton += (
+            "---\n\n"
+            "Follow the following format:\n\n"
+            "Thought 1: Reasoning which action to take to solve the task.\n"
+            "Action 1: Always either "
+        )
+
+        action_descriptions = " or ".join([f"{action_value.short_desc}" for _, action_value in tools.items()])
+        skeleton += action_descriptions
+
+        skeleton += (
+            "\nObservation 1: result of Action 1\n"
+            "Thought 2: next steps to take based on the previous Observation\n"
+            "...\n"
+            "until Action is of type Finish.\n\n"
+            "---\n\n"
+            "Question: \n"
+        )
+
+        return skeleton
+
+
 
     def extract_action(self, response, i):
         pattern = rf"Action {i}: (\w+)\[(.*?)\]"
@@ -71,7 +75,7 @@ class ReAct:
         return f"{prompt}\n{response}\nObservation {i}:\n {obs}"
 
     def __call__(self, prompt, max_iters):
-        prompt = f"{SYSPROMPT} {prompt}"
+        prompt = f"{self.sysprompt} {prompt}"
         logging.debug(f"Prompt:\n###\n{prompt}\n###")
         for i in range(1, max_iters+1):
             response = query_completions(model=self.model, prompt=prompt)
