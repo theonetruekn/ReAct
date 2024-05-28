@@ -4,10 +4,12 @@ import logging
 
 class CodebaseTool:
     name = "CodeSearch"
-    desc = """
-        searches the codebase for classes or functions specified in 'search_query'.
-        Example use: CodeSearch(my_func(param1, param2)) or CodeSearch(Person(age, gender)).
-        """
+    
+    desc = """searches the codebase for a class or a function, specified as search_query in CodeSearch[search_query]. Returns the source code."""
+    
+    example = """CodeSearch[my_func(param1, param2)] for searching a function or CodeSearch[SomeClass()] for searching a class."""
+    
+    short_desc = """CodeSearch[search_query]"""
 
     def __init__(self, root):
         self.root = root
