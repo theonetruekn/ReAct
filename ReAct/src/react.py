@@ -1,12 +1,12 @@
 import logging
 import re
 
-from src.utils import query_completions
+from ReAct.src.llm_wrapper import LLM
 
 class ReAct:
 
-    def __init__(self, model, tools) -> None:
-        self.model = model
+    def __init__(self, lm: LLM, tools) -> None:
+        self.lm = lm
         self.tools = tools
         self.sysprompt = self._build_sysprompt(tools)
 
@@ -36,12 +36,10 @@ class ReAct:
             "...\n"
             "until Action is of type Finish.\n\n"
             "---\n\n"
-            "Question: \n"
+            "Question: "
         )
 
         return skeleton
-
-
 
     def extract_action(self, response, i):
         pattern = rf"Action {i}: (\w+)\[(.*?)\]"
@@ -72,13 +70,13 @@ class ReAct:
         return self.tools[action_name](action_value)
 
     def expand_prompt(self, prompt, response, obs, i):
-        return f"{prompt}\n{response}\nObservation {i}:\n {obs}"
+        return f"{prompt}\n{response}\nObservation {i}:\n{obs}"
 
     def __call__(self, prompt, max_iters):
         prompt = f"{self.sysprompt} {prompt}"
         logging.debug(f"Prompt:\n###\n{prompt}\n###")
         for i in range(1, max_iters+1):
-            response = query_completions(model=self.model, prompt=prompt)
+            response = self.lm.query_completions(prompt=prompt)
             logging.debug(f"Response:\n###\n{response}\n###")
             action_name, action_value = self.extract_action(response, i)
             if action_name == "Finish":
@@ -92,4 +90,3 @@ class ReAct:
                 logging.info("Something went wrong with the tool use. Trying again.")
         
         raise TimeoutError("The program did not terminate in the designated number of iterations.")
-
