@@ -2,14 +2,14 @@ import os
 import ast
 import logging
 
-class CodebaseTool:
+class CodeSearch:
     name = "CodeSearch"
     
-    desc = """searches the codebase for a class or a function, specified as search_query in CodeSearch[search_query]. Returns the source code."""
+    desc = f"searches the codebase for a class or a function, specified as search_query in {name}[search_query]. Returns the source code."
     
-    example = """CodeSearch[my_func(param1, param2)] for searching a function or CodeSearch[SomeClass()] for searching a class."""
+    example = f"{name}[my_func(param1, param2)] for searching a function or {name}[SomeClass()] for searching a class."
     
-    short_desc = """CodeSearch[search_query]"""
+    short_desc = f"{name}[search_query]"
 
     def __init__(self, root):
         self.root = root

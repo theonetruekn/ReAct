@@ -10,7 +10,7 @@ def mock_query_completions(model, prompt):
     }
     return responses[len(re.findall(r'Observation', prompt)) + 1]
 
-class CodebaseTool:
+class CodeSearch:
     name = "CodeSearch"
     desc = """searches the codebase for a class or a function, specified as search_query in CodeSearch[search_query]. Returns the source code."""
     example = """CodeSearch[my_func(param1, param2)] for searching a function or CodeSearch[SomeClass()] for searching a class."""
